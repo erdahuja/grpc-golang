@@ -9,6 +9,8 @@ import (
 
 	"../greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -18,7 +20,7 @@ func main() {
 	}
 	defer conn.Close()
 	c := greetpb.NewGreetServiceClient(conn)
-	doBiDiStreaming(c)
+	doUnaryWithDeadline(c)
 }
 
 func doUnary(c greetpb.GreetServiceClient) {
@@ -160,4 +162,29 @@ func doBiDiStreaming(c greetpb.GreetServiceClient) {
 		}
 	}()
 	<-waitc
+}
+
+func doUnaryWithDeadline(c greetpb.GreetServiceClient) {
+	req := &greetpb.GreetWithDeadLineRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Deepak",
+			LastName:  "Ahuja",
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := c.GreetWithDeadLine(ctx, req)
+	if err != nil {
+		statusErr, ok := status.FromError(err)
+		if ok {
+			if statusErr.Code() == codes.DeadlineExceeded {
+				log.Fatalf("Deadline Exceeded")
+			} else {
+				log.Fatalf("Unexpected error %v", statusErr)
+			}
+		} else {
+			log.Fatalf("Error is %v", statusErr.Message())
+		}
+	}
+	log.Printf("response is %v", res.Result)
 }

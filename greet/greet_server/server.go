@@ -7,9 +7,12 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"time"
 
 	"../greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -82,6 +85,21 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 			return err
 		}
 	}
+}
+
+func (*server) GreetWithDeadLine(ctx context.Context, req *greetpb.GreetWithDeadLineRequest) (*greetpb.GreetWithDeadLineResponse, error) {
+	fmt.Printf("GreetWithDeadLine invoked %v", req.String())
+	firstName := req.GetGreeting().GetFirstName()
+	lastName := req.GetGreeting().GetLastName()
+	result := "Hello " + firstName + " " + lastName
+	res := &greetpb.GreetWithDeadLineResponse{
+		Result: result,
+	}
+	time.Sleep(3 * time.Second)
+	if ctx.Err() == context.Canceled {
+		return nil, status.Error(codes.Canceled, "the client canceled the request")
+	}
+	return res, nil
 }
 
 func main() {
