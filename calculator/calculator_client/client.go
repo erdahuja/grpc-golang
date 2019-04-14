@@ -7,6 +7,7 @@ import (
 
 	"../calculatorpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	}
 	defer conn.Close()
 	c := calculatorpb.NewCalculatorServiceClient(conn)
-	doComputeAverage(c)
+	doErrorUnary(c)
 }
 
 func doUnary(c calculatorpb.CalculatorServiceClient) {
@@ -60,4 +61,37 @@ func doComputeAverage(c calculatorpb.CalculatorServiceClient) {
 		log.Fatalf("Error is %v", err)
 	}
 	fmt.Printf("Response of LongGreet from server is %v\n", response)
+}
+
+func doErrorUnary(c calculatorpb.CalculatorServiceClient) {
+	req := &calculatorpb.SquareRootRequest{
+		Number: 1,
+	}
+	res, err := c.SquareRoot(context.Background(), req)
+	if err != nil {
+		error, ok := status.FromError(err)
+		if ok {
+			// actual error from gRpc (user error)
+			fmt.Println(error.Message())
+			fmt.Println(error.Code())
+		} else {
+			log.Fatalf("Big Error in SquareRoot %v", err)
+		}
+	}
+	log.Printf("response is %v", res.String())
+	req2 := &calculatorpb.SquareRootRequest{
+		Number: -1,
+	}
+	res2, err := c.SquareRoot(context.Background(), req2)
+	if err != nil {
+		error, ok := status.FromError(err)
+		if ok {
+			// actual error from gRpc (user error)
+			fmt.Println(error.Message())
+			fmt.Println(error.Code())
+		} else {
+			log.Fatalf("Big Error in SquareRoot %v", err)
+		}
+	}
+	log.Printf("response is %v", res2.String())
 }
