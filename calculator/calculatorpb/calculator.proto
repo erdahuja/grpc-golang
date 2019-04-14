@@ -13,6 +13,15 @@ message SumResponse{
   int32 sum_result = 1;
 }
 
+message ComputeAverageRequest {
+  int32 number = 1;
+}
+
+message ComputeAverageResponse {
+  double average = 1;
+}
+
 service CalculatorService{
 rpc Sum(SumRequest) returns (SumResponse);
+rpc ComputeAverage (stream ComputeAverageRequest) returns (ComputeAverageResponse);
 }

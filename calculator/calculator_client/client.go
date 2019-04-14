@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"../calculatorpb"
@@ -15,7 +16,7 @@ func main() {
 	}
 	defer conn.Close()
 	c := calculatorpb.NewCalculatorServiceClient(conn)
-	doUnary(c)
+	doComputeAverage(c)
 }
 
 func doUnary(c calculatorpb.CalculatorServiceClient) {
@@ -28,4 +29,35 @@ func doUnary(c calculatorpb.CalculatorServiceClient) {
 		log.Fatalf("Error is %v", err)
 	}
 	log.Printf("response is %v", res.SumResult)
+}
+
+func doComputeAverage(c calculatorpb.CalculatorServiceClient) {
+	fmt.Println("Starting client streaming rpc...")
+	requests := []*calculatorpb.ComputeAverageRequest{
+		&calculatorpb.ComputeAverageRequest{
+			Number: 1,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 2,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 3,
+		},
+		&calculatorpb.ComputeAverageRequest{
+			Number: 4,
+		},
+	}
+	stream, err := c.ComputeAverage(context.Background())
+	if err != nil {
+		log.Fatalf("Error is %v", err)
+	}
+	for _, req := range requests {
+		fmt.Println("Sending... ", req.String())
+		stream.Send(req)
+	}
+	response, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error is %v", err)
+	}
+	fmt.Printf("Response of LongGreet from server is %v\n", response)
 }
